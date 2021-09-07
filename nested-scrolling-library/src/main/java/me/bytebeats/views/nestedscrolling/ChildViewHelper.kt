@@ -6,8 +6,11 @@ package me.bytebeats.views.nestedscrolling
  * @Github https://github.com/bytebeats
  * @Created on 2021/9/7 20:46
  * @Version 1.0
- * @Description TO-DO
+ * @Description 嵌套滚动子 View 帮助类
  */
 
-class NestedScrollingChildHelper {
+class ChildViewHelper(iChildView: IChildView) {
+    fun iParentView(): IParentView? {
+        return null
+    }
 }
