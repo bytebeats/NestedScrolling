@@ -1,0 +1,3 @@
+rootProject.name = "NestedScrolling"
+include ':app'
+include ':nested-scrolling-library'
