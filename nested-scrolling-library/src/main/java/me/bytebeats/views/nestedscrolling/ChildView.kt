@@ -4,6 +4,8 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.View
 import android.widget.FrameLayout
+import me.bytebeats.views.nestedscrolling.redirect.IScrollRedirect
+import me.bytebeats.views.nestedscrolling.redirect.ScrollRedirect
 
 /**
  * @Author bytebeats
@@ -17,14 +19,17 @@ import android.widget.FrameLayout
 class ChildView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null, defStyleAttr: Int = 0
-) : FrameLayout(context, attrs, defStyleAttr), IChildView {
+) : FrameLayout(context, attrs, defStyleAttr), IChildView, IScrollRedirect by ScrollRedirect() {
     override val mChildViewHelper: ChildViewHelper
         get() = ChildViewHelper(this)
+
+    init {
+        init(this)
+    }
 
     override fun iParentView(): IParentView? = mChildViewHelper.iParentView()
 
     override fun onParentViewScrolling(scrollY: Int) {
-        TODO("Not yet implemented")
     }
 
     override fun childView(): View = getChildAt(0)
