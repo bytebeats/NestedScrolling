@@ -1,3 +1,4 @@
 rootProject.name = "NestedScrolling"
 include ':app'
 include ':nested-scrolling-library'
+include ':nested-scrolling-refresh-library'
