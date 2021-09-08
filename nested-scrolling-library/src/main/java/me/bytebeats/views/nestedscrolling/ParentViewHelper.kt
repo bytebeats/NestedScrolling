@@ -21,6 +21,9 @@ class ParentViewHelper(private val parentView: View) : View.OnLayoutChangeListen
     private var needUpdate = true
     private val pair = MutablePair<View?, Int>(null, 0)
 
+    private val cmd = Runnable {
+        (parentView as IParentView).fixInconsistentChildScroll()
+    }
 
     fun addChildView(iChildView: IChildView) {
         var currentView = iChildView as View
@@ -36,6 +39,42 @@ class ParentViewHelper(private val parentView: View) : View.OnLayoutChangeListen
         children.remove(iChildView as View)
         iChildView.removeOnLayoutChangeListener(this)
         needUpdate = true
+    }
+
+    fun closestChild(top: Int, before: Boolean): MutablePair<View?, Int> {
+        updateVisibleRect()
+        val idx = topChildren.binarySearch { it.second - top }
+        if (idx >= 0) {
+            return pair.update(topChildren[idx].first, top)
+        } else {
+            val insertIdx = -idx - 1
+            if (before) {
+                if (insertIdx > 0) {
+                    return pair.update(topChildren[insertIdx - 1].first, topChildren[insertIdx - 1].second)
+                }
+            } else {
+                if (insertIdx in topChildren.indices) {
+                    return pair.update(topChildren[insertIdx].first, topChildren[insertIdx].second)
+                }
+            }
+        }
+        return pair.update(null, 0)
+    }
+
+    fun topChild(top: Int): MutablePair<View?, Int> {
+        val idx = topChildren.binarySearch { it.second - top }
+        if (idx >= 0) {
+            return pair.update(topChildren[idx].first, top)
+        } else {
+            val insertIdx = -idx - 1
+            if (insertIdx > 0) {
+                val child = topChildren[insertIdx - 1].first
+                if (insertIdx in 1..hitRectMap[child]!!.bottom) {
+                    return pair.update(child, topChildren[insertIdx - 1].second)
+                }
+            }
+        }
+        return pair.update(null, 0)
     }
 
     private fun updateVisibleRect() {
@@ -96,6 +135,8 @@ class ParentViewHelper(private val parentView: View) : View.OnLayoutChangeListen
         oldRight: Int,
         oldBottom: Int
     ) {
-
+        needUpdate = true
+        parentView.removeCallbacks(cmd)
+        parentView.post(cmd)
     }
 }
