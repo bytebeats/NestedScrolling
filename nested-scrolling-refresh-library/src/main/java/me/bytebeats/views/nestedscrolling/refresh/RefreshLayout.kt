@@ -31,31 +31,32 @@ class RefreshLayout @JvmOverloads constructor(
     private var isRefreshing = false
     private var mState = State.NONE
     private var mTotalUnconsumed = 0F
-    private val nestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
-    private val nestedScrollingChildHelper by lazy { NestedScrollingChildHelper(this) }
-    private val parentScrollConsumed by lazy { IntArray(2) }
-    private val parentOffsetInWindow by lazy { IntArray(2) }
+    private val mNestedScrollingParentHelper by lazy { NestedScrollingParentHelper(this) }
+    private val mNestedScrollingChildHelper by lazy { NestedScrollingChildHelper(this) }
+    private val mParentScrollConsumed by lazy { IntArray(2) }
+    private val mParentOffsetInWindow by lazy { IntArray(2) }
     private var isNestedScrollInProgress = false
 
-    private var isBeingDragged = false
-    private var activePointerId = INVALID_POINTER
+    private var sBeingDragged = false
+    private var mActivePointerId = INVALID_POINTER
 
-    private val touchSlog by lazy { ViewConfiguration.get(context).scaledTouchSlop }
-    private var initialMotionY = 0F
-    private var initialDownY = 0F
+    private val mTouchSlog by lazy { ViewConfiguration.get(context).scaledTouchSlop }
+    private var mInitialMotionY = 0F
+    private var mInitialDownY = 0F
 
-    private var refreshingDistance = 0
+    private var mRefreshingDistance = 0
 
-    private var refreshableView: View? = null
-    private var refreshHeader: AbstractRefreshHeader? = null
-    private var headerHeight = -1
+    var refreshableView: View? = null
+        private set
+    private var mRefreshHeader: AbstractRefreshHeader? = null
+    private var mHeaderHeight = -1
 
-    private var curSmoothScrollCmd: SmoothScrollCommand? = null
-    private val scrollAnimationInterpolator by lazy { DecelerateInterpolator() }
+    private var mSmoothScrollCmd: SmoothScrollCommand? = null
+    private val mScrollAnimationInterpolator by lazy { DecelerateInterpolator() }
 
     var onRefreshListener: OnRefreshListener? = null
     var onChildScrollUpCallback: OnChildScrollUpCallback? = null
-    private val onSmoothScrollFinishedListener by lazy {
+    private val mSmoothScrollFinishedListener by lazy {
         object : OnSmoothScrollFinishedListener {
             override fun onSmoothScrollFinished() {
                 tryInvokeRefreshListener()
@@ -65,15 +66,14 @@ class RefreshLayout @JvmOverloads constructor(
 
     var maxDistanceToPull: Int = -1
     var scrollableWhenRefreshing: Boolean = true
-    var refreshHeaderPath: String? = null
 
     init {
         val a = context.obtainStyledAttributes(attrs, R.styleable.RefreshLayout)
         scrollableWhenRefreshing = a.getBoolean(R.styleable.RefreshLayout_scrollableWhenRefreshing, true)
         maxDistanceToPull = a.getDimensionPixelOffset(R.styleable.RefreshLayout_maxDistanceToPull, 60)
-        refreshHeaderPath = a.getString(R.styleable.RefreshLayout_refreshHeaderPath)
-        if (refreshHeaderPath.isNullOrEmpty()) {
-            refreshHeader = AbstractRefreshHeader.parseRefreshHeader(context, attrs, refreshHeaderPath)
+        val refreshHeaderPath = a.getString(R.styleable.RefreshLayout_refreshHeaderPath)
+        if (!refreshHeaderPath.isNullOrEmpty()) {
+            mRefreshHeader = AbstractRefreshHeader.parseRefreshHeader(context, attrs, refreshHeaderPath)
                 ?: throw IllegalArgumentException("$refreshHeaderPath has to be ${AbstractRefreshHeader::class.java}")
         } else {
             throw RuntimeException("attribute refreshHeaderPath has to been aligned.")
@@ -93,13 +93,13 @@ class RefreshLayout @JvmOverloads constructor(
                 ViewCompat.setNestedScrollingEnabled(it, true)
             }
         }
-        refreshHeader?.let {
+        mRefreshHeader?.let {
             it.measure(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
-            headerHeight = it.measuredHeight
-            refreshingDistance = headerHeight
+            mHeaderHeight = it.measuredHeight
+            mRefreshingDistance = mHeaderHeight
             val headerLayoutParam = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
-            headerLayoutParam.topMargin = -headerHeight
-            addView(refreshHeader, -1, headerLayoutParam)
+            headerLayoutParam.topMargin = -mHeaderHeight
+            addView(mRefreshHeader, -1, headerLayoutParam)
         }
     }
 
@@ -116,52 +116,52 @@ class RefreshLayout @JvmOverloads constructor(
         var pointerIdx = 0
         when (action) {
             MotionEvent.ACTION_DOWN -> {
-                activePointerId = ev.getPointerId(0)
-                isBeingDragged = false
-                pointerIdx = ev.findPointerIndex(activePointerId)
+                mActivePointerId = ev.getPointerId(0)
+                sBeingDragged = false
+                pointerIdx = ev.findPointerIndex(mActivePointerId)
                 if (pointerIdx < 0) {
                     return false
                 }
-                initialDownY = ev.getY(pointerIdx)
+                mInitialDownY = ev.getY(pointerIdx)
                 if (mState == State.REFRESHING) {
-                    initialDownY -= refreshingDistance / DRAG_RATE
+                    mInitialDownY -= mRefreshingDistance / DRAG_RATE
                 }
             }
             MotionEvent.ACTION_MOVE -> {
-                if (activePointerId == INVALID_POINTER) {
+                if (mActivePointerId == INVALID_POINTER) {
                     return false
                 }
-                pointerIdx = ev.findPointerIndex(activePointerId)
+                pointerIdx = ev.findPointerIndex(mActivePointerId)
                 if (pointerIdx < 0) {
                     return false
                 }
                 val y = ev.getY(pointerIdx)
                 if (mState == State.REFRESHING) {
-                    val dy = y - (initialDownY + refreshingDistance / DRAG_RATE)
-                    if (dy.absoluteValue > touchSlog && !isBeingDragged) {
+                    val dy = y - (mInitialDownY + mRefreshingDistance / DRAG_RATE)
+                    if (dy.absoluteValue > mTouchSlog && !sBeingDragged) {
                         if (dy > 0) {
-                            initialMotionY = initialDownY + touchSlog
+                            mInitialMotionY = mInitialDownY + mTouchSlog
                         } else {
-                            initialMotionY = initialDownY - touchSlog
+                            mInitialMotionY = mInitialDownY - mTouchSlog
                         }
-                        isBeingDragged = true
+                        sBeingDragged = true
                     }
                 } else {
-                    startDragging(y - initialDownY)
+                    startDragging(y - mInitialDownY)
                 }
             }
             MotionEvent.ACTION_POINTER_UP -> {
                 onSecondaryPointerUp(ev)
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                isBeingDragged = false
-                activePointerId = INVALID_POINTER
+                sBeingDragged = false
+                mActivePointerId = INVALID_POINTER
                 if (mState != State.REFRESHING && scrollY != 0) {
                     reset()
                 }
             }
         }
-        return isBeingDragged
+        return sBeingDragged
     }
 
     override fun requestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {
@@ -179,48 +179,48 @@ class RefreshLayout @JvmOverloads constructor(
         }
         var pointerIdx = -1
         if (mState == State.SCROLL_TO_BACK || mState == State.SCROLL_TO_REFRESH) {
-            activePointerId = event.getPointerId(0)
-            isBeingDragged = false
-            pointerIdx = event.findPointerIndex(activePointerId)
+            mActivePointerId = event.getPointerId(0)
+            sBeingDragged = false
+            pointerIdx = event.findPointerIndex(mActivePointerId)
             if (pointerIdx < 0) {
                 return false
             }
-            initialDownY = event.getY(pointerIdx)
-            curSmoothScrollCmd?.stop()
+            mInitialDownY = event.getY(pointerIdx)
+            mSmoothScrollCmd?.stop()
             mState = State.MANUAL_SCROLLING
-            initialDownY += scrollY / DRAG_RATE - touchSlog
-            initialMotionY = initialDownY
+            mInitialDownY += scrollY / DRAG_RATE - mTouchSlog
+            mInitialMotionY = mInitialDownY
             return true
         }
         if (mState == State.REFRESHING) {
-            isBeingDragged = true
+            sBeingDragged = true
         } else if (!isEnabled || canChildScrollUp() || isNestedScrollInProgress) {
             return false
         }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                activePointerId = event.getPointerId(0)
-                isBeingDragged = false
+                mActivePointerId = event.getPointerId(0)
+                sBeingDragged = false
             }
             MotionEvent.ACTION_MOVE -> {
-                if (activePointerId == INVALID_POINTER) {
+                if (mActivePointerId == INVALID_POINTER) {
                     return false
                 }
-                pointerIdx = event.findPointerIndex(activePointerId)
+                pointerIdx = event.findPointerIndex(mActivePointerId)
                 if (pointerIdx < 0) {
                     return false
                 }
                 val y = event.getY(pointerIdx)
-                val dy = y - initialDownY
+                val dy = y - mInitialDownY
                 startDragging(dy)
 
-                val overScrollTop = (initialMotionY - y) * DRAG_RATE
-                if (isBeingDragged) {
+                val overScrollTop = (mInitialMotionY - y) * DRAG_RATE
+                if (sBeingDragged) {
                     if (overScrollTop <= 0) {
                         moveHeader(overScrollTop)
                     } else {
-                        curSmoothScrollCmd?.stop()
-                        isBeingDragged = false
+                        mSmoothScrollCmd?.stop()
+                        sBeingDragged = false
                         setBodyScroll(0)
                         return false
                     }
@@ -233,26 +233,26 @@ class RefreshLayout @JvmOverloads constructor(
                 }
                 val secondPointerY = event.getY(pointerIdx)
                 val secondPointerId = event.getPointerId(pointerIdx)
-                initialDownY = secondPointerY + scrollY / DRAG_RATE - touchSlog
-                activePointerId = secondPointerId
-                isBeingDragged = false
+                mInitialDownY = secondPointerY + scrollY / DRAG_RATE - mTouchSlog
+                mActivePointerId = secondPointerId
+                sBeingDragged = false
             }
             MotionEvent.ACTION_POINTER_UP -> {
                 onSecondaryPointerUp(event)
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                pointerIdx = event.findPointerIndex(activePointerId)
+                pointerIdx = event.findPointerIndex(mActivePointerId)
                 if (pointerIdx < 0) {
                     reset()
                     return false
                 }
-                if (isBeingDragged) {
+                if (sBeingDragged) {
                     val y = event.getY(pointerIdx)
-                    val overScrollTop = (initialMotionY - y) * DRAG_RATE
-                    isBeingDragged = false
+                    val overScrollTop = (mInitialMotionY - y) * DRAG_RATE
+                    sBeingDragged = false
                     finishHeader(overScrollTop)
                 }
-                activePointerId = INVALID_POINTER
+                mActivePointerId = INVALID_POINTER
                 return false
             }
         }
@@ -278,10 +278,10 @@ class RefreshLayout @JvmOverloads constructor(
 
     override fun onNestedScrollAccepted(child: View?, target: View?, axes: Int) {
         if (child != null && target != null) {
-            nestedScrollingParentHelper.onNestedScrollAccepted(child, target, axes)
+            mNestedScrollingParentHelper.onNestedScrollAccepted(child, target, axes)
         }
         startNestedScroll(axes and ViewCompat.SCROLL_AXIS_VERTICAL)
-        mTotalUnconsumed = if (mState == State.REFRESHING) -refreshingDistance / DRAG_RATE else 0F
+        mTotalUnconsumed = if (mState == State.REFRESHING) -mRefreshingDistance / DRAG_RATE else 0F
         isNestedScrollInProgress = true
     }
 
@@ -310,19 +310,19 @@ class RefreshLayout @JvmOverloads constructor(
         if (consumed != null && dispatchNestedPreScroll(
                 dx - consumed[0],
                 dy - consumed[1],
-                parentScrollConsumed,
+                mParentScrollConsumed,
                 null
             )) {
-            consumed[0] += parentScrollConsumed[0]
-            consumed[1] += parentScrollConsumed[1]
+            consumed[0] += mParentScrollConsumed[0]
+            consumed[1] += mParentScrollConsumed[1]
         }
     }
 
-    override fun getNestedScrollAxes(): Int = nestedScrollingParentHelper.nestedScrollAxes
+    override fun getNestedScrollAxes(): Int = mNestedScrollingParentHelper.nestedScrollAxes
 
     override fun onStopNestedScroll(child: View?) {
         if (child != null) {
-            nestedScrollingParentHelper.onStopNestedScroll(child)
+            mNestedScrollingParentHelper.onStopNestedScroll(child)
         }
         isNestedScrollInProgress = false
 
@@ -335,14 +335,14 @@ class RefreshLayout @JvmOverloads constructor(
 
     override fun onNestedScroll(target: View?, dxConsumed: Int, dyConsumed: Int, dxUnconsumed: Int, dyUnconsumed: Int) {
         // Dispatch up to the nested parent first
-        dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, parentOffsetInWindow)
+        dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, mParentOffsetInWindow)
 
         // This is a bit of a hack. Nested scrolling works from the bottom up, and as we are
         // sometimes between two nested scrolling views, we need a way to be able to know when any
         // nested scrolling parent has stopped handling events. We do that by using the
         // 'offset in window 'functionality to see if we have been moved from the event.
         // This is a decent indication of whether we should take over the event stream or not.
-        val dy = dyUnconsumed + parentOffsetInWindow[1]
+        val dy = dyUnconsumed + mParentOffsetInWindow[1]
         if (!canChildScrollUp()) {
             mTotalUnconsumed += dy
             moveHeader(mTotalUnconsumed * DRAG_RATE)
@@ -350,20 +350,20 @@ class RefreshLayout @JvmOverloads constructor(
     }
 
     override fun setNestedScrollingEnabled(enabled: Boolean) {
-        nestedScrollingChildHelper.isNestedScrollingEnabled = enabled
+        mNestedScrollingChildHelper.isNestedScrollingEnabled = enabled
     }
 
-    override fun isNestedScrollingEnabled(): Boolean = nestedScrollingChildHelper.isNestedScrollingEnabled
+    override fun isNestedScrollingEnabled(): Boolean = mNestedScrollingChildHelper.isNestedScrollingEnabled
 
     override fun startNestedScroll(axes: Int): Boolean {
-        return nestedScrollingChildHelper.startNestedScroll(axes)
+        return mNestedScrollingChildHelper.startNestedScroll(axes)
     }
 
     override fun stopNestedScroll() {
-        nestedScrollingChildHelper.stopNestedScroll()
+        mNestedScrollingChildHelper.stopNestedScroll()
     }
 
-    override fun hasNestedScrollingParent(): Boolean = nestedScrollingChildHelper.hasNestedScrollingParent()
+    override fun hasNestedScrollingParent(): Boolean = mNestedScrollingChildHelper.hasNestedScrollingParent()
 
     override fun dispatchNestedScroll(
         dxConsumed: Int,
@@ -372,7 +372,7 @@ class RefreshLayout @JvmOverloads constructor(
         dyUnconsumed: Int,
         offsetInWindow: IntArray?
     ): Boolean {
-        return nestedScrollingChildHelper.dispatchNestedScroll(
+        return mNestedScrollingChildHelper.dispatchNestedScroll(
             dxConsumed,
             dyConsumed,
             dxUnconsumed,
@@ -382,7 +382,7 @@ class RefreshLayout @JvmOverloads constructor(
     }
 
     override fun dispatchNestedPreScroll(dx: Int, dy: Int, consumed: IntArray?, offsetInWindow: IntArray?): Boolean {
-        return nestedScrollingChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow)
+        return mNestedScrollingChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow)
     }
 
     override fun onNestedPreFling(target: View?, velocityX: Float, velocityY: Float): Boolean {
@@ -394,17 +394,17 @@ class RefreshLayout @JvmOverloads constructor(
     }
 
     override fun dispatchNestedFling(velocityX: Float, velocityY: Float, consumed: Boolean): Boolean {
-        return nestedScrollingChildHelper.dispatchNestedFling(velocityX, velocityY, consumed)
+        return mNestedScrollingChildHelper.dispatchNestedFling(velocityX, velocityY, consumed)
     }
 
     override fun dispatchNestedPreFling(velocityX: Float, velocityY: Float): Boolean {
-        return nestedScrollingChildHelper.dispatchNestedPreFling(velocityX, velocityY)
+        return mNestedScrollingChildHelper.dispatchNestedPreFling(velocityX, velocityY)
     }
 
     private fun startDragging(scrollY: Float) {
-        if (scrollY > touchSlog && !isBeingDragged) {
-            isBeingDragged = true
-            initialMotionY = initialDownY + touchSlog
+        if (scrollY > mTouchSlog && !sBeingDragged) {
+            sBeingDragged = true
+            mInitialMotionY = mInitialDownY + mTouchSlog
         }
     }
 
@@ -417,7 +417,7 @@ class RefreshLayout @JvmOverloads constructor(
         if (mState == State.MANUAL_SCROLLING) {
             return
         }
-        refreshHeader?.onRefreshFinish()
+        mRefreshHeader?.onRefreshFinish()
         setState(State.SCROLL_TO_BACK)
     }
 
@@ -425,7 +425,7 @@ class RefreshLayout @JvmOverloads constructor(
         if (refreshableView == null) {
             for (i in 0 until childCount) {
                 val child = getChildAt(i)
-                if (child != refreshHeader) {
+                if (child != mRefreshHeader) {
                     refreshableView = child
                     break
                 }
@@ -437,12 +437,12 @@ class RefreshLayout @JvmOverloads constructor(
         if (event == null) return
         val actionIdx = event.actionIndex
         val pointerId = event.getPointerId(actionIdx)
-        if (pointerId == activePointerId) {
+        if (pointerId == mActivePointerId) {
             val newActionIdx = if (actionIdx == 0) 1 else 0
-            activePointerId = event.getPointerId(newActionIdx)
+            mActivePointerId = event.getPointerId(newActionIdx)
             val activePointerY = event.getY(newActionIdx)
-            initialDownY = activePointerY + scrollY / DRAG_RATE - touchSlog
-            isBeingDragged = false
+            mInitialDownY = activePointerY + scrollY / DRAG_RATE - mTouchSlog
+            sBeingDragged = false
         }
     }
 
@@ -455,17 +455,17 @@ class RefreshLayout @JvmOverloads constructor(
         mState = State.MANUAL_SCROLLING
         setBodyScroll(scrollY.toInt())
         if (scrollY != 0F && !isRefreshing()) {
-            refreshHeader?.onPull(-scrollY)
+            mRefreshHeader?.onPull(-scrollY)
         }
-        if (scrollY < refreshingDistance && scrollY > -refreshingDistance) {
-            refreshHeader?.alreadyToRefresh(false)
+        if (scrollY < mRefreshingDistance && scrollY > -mRefreshingDistance) {
+            mRefreshHeader?.alreadyToRefresh(false)
         } else {
-            refreshHeader?.alreadyToRefresh(true)
+            mRefreshHeader?.alreadyToRefresh(true)
         }
     }
 
     private fun finishHeader(scrollY: Float) {
-        if (scrollY <= -refreshingDistance) {
+        if (scrollY <= -mRefreshingDistance) {
             setState(State.SCROLL_TO_REFRESH)
         } else {
             setState(State.SCROLL_TO_BACK)
@@ -479,11 +479,11 @@ class RefreshLayout @JvmOverloads constructor(
             }
             State.SCROLL_TO_REFRESH -> {
                 mState = State.SCROLL_TO_REFRESH
-                smoothScrollTo(-refreshingDistance, listener = onSmoothScrollFinishedListener)
+                smoothScrollTo(-mRefreshingDistance, listener = mSmoothScrollFinishedListener)
             }
             State.AUTO_REFRESH -> {
                 mState = State.SCROLL_TO_REFRESH
-                smoothScrollTo(-refreshingDistance, 350L, 0L, object : OnSmoothScrollFinishedListener {
+                smoothScrollTo(-mRefreshingDistance, 350L, 0L, object : OnSmoothScrollFinishedListener {
                     override fun onSmoothScrollFinished() {
                         mState = State.SCROLL_TO_REFRESH
                         postDelayed({ setState(State.SCROLL_TO_REFRESH) }, 150L)
@@ -491,7 +491,7 @@ class RefreshLayout @JvmOverloads constructor(
                 })
             }
             State.REFRESHING -> {
-                isBeingDragged = false
+                sBeingDragged = false
                 mState = State.REFRESHING
             }
         }
@@ -500,7 +500,7 @@ class RefreshLayout @JvmOverloads constructor(
     private fun tryInvokeRefreshListener() {
         if (onRefreshListener != null) {
             setState(State.REFRESHING)
-            refreshHeader?.onRefreshStart()
+            mRefreshHeader?.onRefreshStart()
             if (!isRefreshing) {
                 isRefreshing = true
                 onRefreshListener?.onRefresh()
@@ -512,9 +512,9 @@ class RefreshLayout @JvmOverloads constructor(
     }
 
     protected fun reset() {
-        isBeingDragged = false
+        sBeingDragged = false
         mState = State.SCROLL_TO_BACK
-        activePointerId = INVALID_POINTER
+        mActivePointerId = INVALID_POINTER
         smoothScrollTo(0)
     }
 
@@ -524,11 +524,11 @@ class RefreshLayout @JvmOverloads constructor(
         delayInMillis: Long = 0L,
         listener: OnSmoothScrollFinishedListener? = null
     ) {
-        curSmoothScrollCmd?.stop()
+        mSmoothScrollCmd?.stop()
         val oldScrollY = scrollY
         if (oldScrollY != newScrollY) {
-            curSmoothScrollCmd = SmoothScrollCommand(oldScrollY, newScrollY, duration, listener)
-            postDelayed(curSmoothScrollCmd, delayInMillis)
+            mSmoothScrollCmd = SmoothScrollCommand(oldScrollY, newScrollY, duration, listener)
+            postDelayed(mSmoothScrollCmd, delayInMillis)
         } else {
             mState = State.NONE
         }
@@ -564,13 +564,13 @@ class RefreshLayout @JvmOverloads constructor(
         override fun run() {
             if (startTime == -1L) {
                 startTime = System.currentTimeMillis()
-            } else if (isBeingDragged) {
+            } else if (sBeingDragged) {
                 return
             } else {
                 var normalizedTime = 1000L * (System.currentTimeMillis() - startTime) / duration
                 normalizedTime = (0L).coerceAtLeast(normalizedTime.coerceAtMost(1000L))
                 val deltaY =
-                    ((fromY - toY) * scrollAnimationInterpolator.getInterpolation(normalizedTime / 1000f)).roundToInt()
+                    ((fromY - toY) * mScrollAnimationInterpolator.getInterpolation(normalizedTime / 1000f)).roundToInt()
                 currentY = fromY - deltaY
                 setBodyScroll(currentY)
             }
@@ -578,7 +578,7 @@ class RefreshLayout @JvmOverloads constructor(
             if (continueRunning && toY != currentY) {
                 ViewCompat.postOnAnimation(this@RefreshLayout, this)
             } else {
-                refreshHeader?.onRefreshCancel()
+                mRefreshHeader?.onRefreshCancel()
                 mState = State.NONE
                 listener?.onSmoothScrollFinished()
             }
