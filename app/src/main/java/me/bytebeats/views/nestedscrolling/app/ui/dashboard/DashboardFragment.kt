@@ -4,11 +4,16 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import me.bytebeats.views.nestedscrolling.app.R
+import me.bytebeats.views.nestedscrolling.app.adapter.ImageAdapter
+import me.bytebeats.views.nestedscrolling.app.adapter.TextAdapter
 import me.bytebeats.views.nestedscrolling.app.databinding.FragmentDashboardBinding
 
 class DashboardFragment : Fragment() {
@@ -19,6 +24,8 @@ class DashboardFragment : Fragment() {
     // This property is only valid between onCreateView and
     // onDestroyView.
     private val binding get() = _binding!!
+
+    private val adapter by lazy { ImageAdapter(requireContext()) }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,10 +38,19 @@ class DashboardFragment : Fragment() {
         _binding = FragmentDashboardBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val textView: TextView = binding.textDashboard
-        dashboardViewModel.text.observe(viewLifecycleOwner, Observer {
-            textView.text = it
+        val listView: RecyclerView = binding.recyclerView
+        listView.layoutManager = object : LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false) {
+            override fun canScrollHorizontally(): Boolean = false
+            override fun canScrollVertically(): Boolean = true
+        }
+        listView.adapter = adapter
+        dashboardViewModel.listData.observe(viewLifecycleOwner, { it ->
+            adapter.add(it)
         })
+        val text: TextView = binding.textDashboard
+        text.setOnClickListener {
+            dashboardViewModel.generate(10)
+        }
         return root
     }
 
