@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">NestedScrolling</string>
-    <string name="title_home">Home</string>
-    <string name="title_dashboard">Dashboard</string>
-    <string name="title_notifications">Notifications</string>
+    <string name="title_list_view">ListView</string>
+    <string name="title_recycler_view">RecyclerView</string>
+    <string name="title_refresh_layout">RefreshLayout</string>
     <string name="refresh_header_path">me.bytebeats.views.nestedscrolling.refresh.RefreshHeader</string>
 </resources>

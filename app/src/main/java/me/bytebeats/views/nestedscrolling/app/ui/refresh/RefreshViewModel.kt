@@ -1,10 +1,11 @@
-package me.bytebeats.views.nestedscrolling.app.ui.home
+package me.bytebeats.views.nestedscrolling.app.ui.refresh
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class HomeViewModel : ViewModel() {
+class RefreshViewModel : ViewModel() {
+
     private var times = 0
 
     private val _listData = MutableLiveData<List<String>>()

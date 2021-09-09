@@ -1,10 +1,10 @@
-package me.bytebeats.views.nestedscrolling.app.ui.dashboard
+package me.bytebeats.views.nestedscrolling.app.ui.recycler
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
-class DashboardViewModel : ViewModel() {
+class RecyclerViewModel : ViewModel() {
 
     private var times = 0
 
