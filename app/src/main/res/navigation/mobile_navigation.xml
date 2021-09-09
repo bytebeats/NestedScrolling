@@ -1,17 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/mobile_navigation" app:startDestination="@+id/navigation_home">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_list_view">
 
-    <fragment android:id="@+id/navigation_home"
-        android:name="me.bytebeats.views.nestedscrolling.app.ui.home.HomeFragment" android:label="@string/title_home"
-        tools:layout="@layout/fragment_home" />
+    <fragment
+        android:id="@+id/navigation_list_view"
+        android:name="me.bytebeats.views.nestedscrolling.app.ui.list.ListViewFragment"
+        android:label="@string/title_list_view"
+        tools:layout="@layout/fragment_list_view" />
 
-    <fragment android:id="@+id/navigation_dashboard"
-        android:name="me.bytebeats.views.nestedscrolling.app.ui.dashboard.DashboardFragment"
-        android:label="@string/title_dashboard" tools:layout="@layout/fragment_dashboard" />
+    <fragment
+        android:id="@+id/navigation_recycler_view"
+        android:name="me.bytebeats.views.nestedscrolling.app.ui.recycler.RecyclerFragment"
+        android:label="@string/title_recycler_view"
+        tools:layout="@layout/fragment_recycler_view" />
 
-    <fragment android:id="@+id/navigation_notifications"
-        android:name="me.bytebeats.views.nestedscrolling.app.ui.notifications.NotificationsFragment"
-        android:label="@string/title_notifications" tools:layout="@layout/fragment_notifications" />
+    <fragment
+        android:id="@+id/navigation_refresh_layout"
+        android:name="me.bytebeats.views.nestedscrolling.app.ui.refresh.RefreshFragment"
+        android:label="@string/title_refresh_layout"
+        tools:layout="@layout/fragment_refresh_layout" />
 </navigation>

@@ -1,4 +1,4 @@
-package me.bytebeats.views.nestedscrolling.app.ui.notifications
+package me.bytebeats.views.nestedscrolling.app.ui.refresh
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,16 +7,14 @@ import android.view.ViewGroup
 import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import me.bytebeats.views.nestedscrolling.app.R
 import me.bytebeats.views.nestedscrolling.app.adapter.TextAdapter
-import me.bytebeats.views.nestedscrolling.app.databinding.FragmentNotificationsBinding
+import me.bytebeats.views.nestedscrolling.app.databinding.FragmentRefreshLayoutBinding
 
-class NotificationsFragment : Fragment() {
+class RefreshFragment : Fragment() {
 
-    private lateinit var notificationsViewModel: NotificationsViewModel
-    private var _binding: FragmentNotificationsBinding? = null
+    private lateinit var refreshViewModel: RefreshViewModel
+    private var _binding: FragmentRefreshLayoutBinding? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -29,20 +27,20 @@ class NotificationsFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        notificationsViewModel =
-            ViewModelProvider(this).get(NotificationsViewModel::class.java)
+        refreshViewModel =
+            ViewModelProvider(this).get(RefreshViewModel::class.java)
 
-        _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
+        _binding = FragmentRefreshLayoutBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         val listView: ListView = binding.listView
         listView.adapter = adapter
-        notificationsViewModel.listData.observe(viewLifecycleOwner, { it ->
+        refreshViewModel.listData.observe(viewLifecycleOwner, { it ->
             adapter.add(it)
         })
         val text: TextView = binding.textNotifications
         text.setOnClickListener {
-            notificationsViewModel.generate(10)
+            refreshViewModel.generate(10)
         }
         return root
     }

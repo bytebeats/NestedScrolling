@@ -1,25 +1,21 @@
-package me.bytebeats.views.nestedscrolling.app.ui.dashboard
+package me.bytebeats.views.nestedscrolling.app.ui.recycler
 
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ListView
 import android.widget.TextView
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import me.bytebeats.views.nestedscrolling.app.R
 import me.bytebeats.views.nestedscrolling.app.adapter.ImageAdapter
-import me.bytebeats.views.nestedscrolling.app.adapter.TextAdapter
-import me.bytebeats.views.nestedscrolling.app.databinding.FragmentDashboardBinding
+import me.bytebeats.views.nestedscrolling.app.databinding.FragmentRecyclerViewBinding
 
-class DashboardFragment : Fragment() {
+class RecyclerFragment : Fragment() {
 
-    private lateinit var dashboardViewModel: DashboardViewModel
-    private var _binding: FragmentDashboardBinding? = null
+    private lateinit var recyclerViewModel: RecyclerViewModel
+    private var _binding: FragmentRecyclerViewBinding? = null
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -32,10 +28,10 @@ class DashboardFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        dashboardViewModel =
-            ViewModelProvider(this).get(DashboardViewModel::class.java)
+        recyclerViewModel =
+            ViewModelProvider(this).get(RecyclerViewModel::class.java)
 
-        _binding = FragmentDashboardBinding.inflate(inflater, container, false)
+        _binding = FragmentRecyclerViewBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
         val listView: RecyclerView = binding.recyclerView
@@ -44,12 +40,12 @@ class DashboardFragment : Fragment() {
             override fun canScrollVertically(): Boolean = true
         }
         listView.adapter = adapter
-        dashboardViewModel.listData.observe(viewLifecycleOwner, { it ->
+        recyclerViewModel.listData.observe(viewLifecycleOwner, { it ->
             adapter.add(it)
         })
         val text: TextView = binding.textDashboard
         text.setOnClickListener {
-            dashboardViewModel.generate(10)
+            recyclerViewModel.generate(10)
         }
         return root
     }
