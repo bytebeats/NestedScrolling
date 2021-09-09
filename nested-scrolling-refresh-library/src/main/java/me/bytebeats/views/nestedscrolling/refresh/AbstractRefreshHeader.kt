@@ -14,14 +14,13 @@ import android.widget.FrameLayout
  * @Description TO-DO
  */
 
-abstract class RefreshHeaderLayout @JvmOverloads constructor(
+abstract class AbstractRefreshHeader @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null, defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr), IRefreshHeader {
 
     init {
-        val frameLayoutParams =
-            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+        val frameLayoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
         frameLayoutParams.gravity = Gravity.TOP or Gravity.START
         layoutParams = frameLayoutParams
     }
@@ -32,14 +31,14 @@ abstract class RefreshHeaderLayout @JvmOverloads constructor(
     }
 
     override fun setMargins(left: Int, top: Int, right: Int, bottom: Int) {
-        (layoutParams as FrameLayout.LayoutParams).setMargins(left, top, right, bottom)
+        (layoutParams as LayoutParams).setMargins(left, top, right, bottom)
         requestLayout()
     }
 
     companion object {
-        fun parseRefreshHeader(context: Context, attrs: AttributeSet?, name: String?): RefreshHeaderLayout? {
+        fun parseRefreshHeader(context: Context, attrs: AttributeSet?, name: String?): AbstractRefreshHeader? {
             return if (name.isNullOrEmpty()) null else try {
-                val clazz = Class.forName(name, true, context.classLoader) as Class<RefreshHeaderLayout>
+                val clazz = Class.forName(name, true, context.classLoader) as Class<AbstractRefreshHeader>
                 val constructor = clazz.getConstructor(Context::class.java, AttributeSet::class.java)
                 constructor.isAccessible = true
                 constructor.newInstance(context, attrs)

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="RefreshLayout">
+        <attr name="maxDistanceToPull" format="dimension" />
+        <attr name="scrollableWhenRefreshing" format="boolean" />
+        <attr name="refreshHeaderPath" format="string" />
+    </declare-styleable>
+</resources>
